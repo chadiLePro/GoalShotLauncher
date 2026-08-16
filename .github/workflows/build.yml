@@ -1,0 +1,34 @@
+name: Build DLL
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+
+      - name: Checkout BakkesMod SDK
+        uses: actions/checkout@v4
+        with:
+          repository: bakkesmodorg/BakkesModSDK
+          path: sdk
+
+      - name: Build GoalShotLauncher.dll
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VS=%%i
+          call "%VS%\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cl /nologo /std:c++17 /EHsc /LD /I sdk\include GoalShotLauncher.cpp /link /LIBPATH:sdk\lib pluginsdk.lib /OUT:GoalShotLauncher.dll
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: GoalShotLauncher-DLL
+          path: GoalShotLauncher.dll
+          if-no-files-found: error
